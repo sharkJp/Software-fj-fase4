@@ -1,0 +1,11 @@
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+
+# Logs generados al ejecutar (se crean solos)
+logs/
+
+# Entornos y configuración del editor
+.venv/
+.vscode/
+.idea/
