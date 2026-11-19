@@ -72,12 +72,14 @@ class Servicio(Entidad):
 
     # ------------------- métodos que cada hijo sobrescribe ----------------
     @abstractmethod
-    def calcular_costo_base(self, horas, **parametros):
+    def calcular_costo_base(self, horas, **parametros) -> float:
         """Costo sin impuestos ni descuentos. Cada servicio lo calcula distinto."""
+        raise NotImplementedError  # Cada servicio hijo debe implementarlo
 
     @abstractmethod
-    def validar_parametros(self, horas, **parametros):
+    def validar_parametros(self, horas, **parametros) -> bool:
         """Valida los parámetros propios del servicio. Lanza excepción si fallan."""
+        raise NotImplementedError  # Cada servicio hijo debe implementarlo
 
     def validar(self):
         """Validación general de la entidad servicio."""
