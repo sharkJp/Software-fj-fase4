@@ -119,3 +119,114 @@ class Servicio(Entidad):
     def __str__(self):
         estado = "Disponible" if self.disponible else "NO disponible"
         return f"{self.describir()} [{estado}]"
+    
+    
+    
+    
+
+# ===========================================================================
+# Servicio 1: Reserva de salas
+# ===========================================================================
+class ReservaSala(Servicio):
+    """Alquiler de salas de reuniones o capacitación."""
+
+    RECARGO_GRUPO_GRANDE = 0.10      # +10 % si asisten más de 20 personas
+
+    def __init__(self, codigo, nombre, tarifa_hora, capacidad, disponible=True):
+        super().__init__(codigo, nombre, tarifa_hora, disponible)
+        if not isinstance(capacidad, int) or capacidad <= 0:
+            raise ValidacionError("capacidad", "debe ser un entero positivo")
+        self.capacidad = capacidad
+
+    def validar_parametros(self, horas, **parametros):
+        personas = parametros.get("personas")
+        if personas is None:
+            raise ParametroFaltanteError("personas")
+        if not 1 <= horas <= 12:
+            raise ValidacionError("horas", "una sala se reserva entre 1 y 12 horas")
+        if personas > self.capacidad:
+            raise ValidacionError(
+                "personas", f"{personas} superan la capacidad de la sala ({self.capacidad})"
+            )
+        return True
+
+    def calcular_costo_base(self, horas, **parametros):
+        base = self.tarifa_hora * horas
+        if parametros.get("personas", 0) > 20:          # Recargo por grupo grande
+            base *= 1 + self.RECARGO_GRUPO_GRANDE
+        return base
+
+    def describir(self):
+        return (f"Sala '{self.nombre}' ({self.codigo}) - capacidad {self.capacidad} "
+                f"personas - ${self.tarifa_hora:,.0f}/hora")
+
+
+# ===========================================================================
+# Servicio 2: Alquiler de equipos
+# ===========================================================================
+class AlquilerEquipo(Servicio):
+    """Alquiler de equipos (portátiles, proyectores, etc.)."""
+
+    DEPOSITO_POR_UNIDAD = 20000      # Depósito fijo por cada equipo alquilado
+
+    def __init__(self, codigo, nombre, tarifa_hora, unidades_disponibles, disponible=True):
+        super().__init__(codigo, nombre, tarifa_hora, disponible)
+        if not isinstance(unidades_disponibles, int) or unidades_disponibles < 0:
+            raise ValidacionError("unidades_disponibles", "debe ser un entero >= 0")
+        self.unidades_disponibles = unidades_disponibles
+
+    def validar_parametros(self, horas, **parametros):
+        cantidad = parametros.get("cantidad")
+        if cantidad is None:
+            raise ParametroFaltanteError("cantidad")
+        if cantidad <= 0:
+            raise ValidacionError("cantidad", "debe alquilar al menos un equipo")
+        if not 1 <= horas <= 72:
+            raise ValidacionError("horas", "un equipo se alquila entre 1 y 72 horas")
+        if cantidad > self.unidades_disponibles:
+            raise ValidacionError(
+                "cantidad",
+                f"solo hay {self.unidades_disponibles} unidades de '{self.nombre}'",
+            )
+        return True
+
+    def calcular_costo_base(self, horas, **parametros):
+        cantidad = parametros.get("cantidad", 1)
+        return self.tarifa_hora * horas * cantidad + self.DEPOSITO_POR_UNIDAD * cantidad
+
+    def describir(self):
+        return (f"Equipo '{self.nombre}' ({self.codigo}) - {self.unidades_disponibles} "
+                f"unidades - ${self.tarifa_hora:,.0f}/hora")
+
+
+# ===========================================================================
+# Servicio 3: Asesorías especializadas
+# ===========================================================================
+class Asesoria(Servicio):
+    """Asesoría con un especialista; el nivel cambia la tarifa."""
+
+    MULTIPLICADOR_NIVEL = {"basico": 1.0, "avanzado": 1.5, "experto": 2.0}
+
+    def __init__(self, codigo, nombre, tarifa_hora, especialidad, disponible=True):
+        super().__init__(codigo, nombre, tarifa_hora, disponible)
+        if not especialidad:
+            raise ParametroFaltanteError("especialidad")
+        self.especialidad = especialidad
+
+    def validar_parametros(self, horas, **parametros):
+        nivel = parametros.get("nivel", "basico")
+        if nivel not in self.MULTIPLICADOR_NIVEL:
+            raise ValidacionError(
+                "nivel", f"'{nivel}' no existe; use {list(self.MULTIPLICADOR_NIVEL)}"
+            )
+        if not 1 <= horas <= 8:
+            raise ValidacionError("horas", "una asesoría dura entre 1 y 8 horas")
+        return True
+
+    def calcular_costo_base(self, horas, **parametros):
+        nivel = parametros.get("nivel", "basico")
+        return self.tarifa_hora * horas * self.MULTIPLICADOR_NIVEL[nivel]
+
+    def describir(self):
+        return (f"Asesoría '{self.nombre}' ({self.codigo}) en {self.especialidad} "
+                f"- ${self.tarifa_hora:,.0f}/hora")
